@@ -1,4 +1,4 @@
-# LangChain Function Calling with Azure GPT-5
+# LangChain Function Calling with Azure OpenAI GPT Model
 
 This repository contains example code and resources for the blog post  
 **“When LLMs Stop Talking and Start Doing: A Guide to LangChain Function Calling with Python and Azure AI Foundry.”**
