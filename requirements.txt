@@ -1,0 +1,22 @@
+# Core Web Framework
+fastapi
+uvicorn[standard]
+
+# Config & Environment
+pydantic
+pydantic-settings
+python-dotenv
+
+# HTTP Client
+httpx
+
+# LangChain + Azure/OpenAI integration
+langchain
+langchain-openai
+langchain-core
+
+# OpenAI 
+openai
+ 
+# Testing
+pytest
