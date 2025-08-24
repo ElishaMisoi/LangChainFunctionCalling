@@ -4,6 +4,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from typing import Dict
 from functools import lru_cache
+import threading
 from .llm import get_llm
 
 # System prompt keeps answers crisp but helpful.
