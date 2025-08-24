@@ -21,11 +21,13 @@ prompt = ChatPromptTemplate.from_messages([
 
 # Very simple in-memory session store (swap for Redis/DB in prod)
 _session_store: Dict[str, InMemoryChatMessageHistory] = {}
+_session_store_lock = threading.Lock()
 
 def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
-    if session_id not in _session_store:
-        _session_store[session_id] = InMemoryChatMessageHistory()
-    return _session_store[session_id]
+    with _session_store_lock:
+        if session_id not in _session_store:
+            _session_store[session_id] = InMemoryChatMessageHistory()
+        return _session_store[session_id]
 
 @lru_cache()
 def get_core_chain():
