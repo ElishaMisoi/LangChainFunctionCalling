@@ -58,10 +58,10 @@ def _weather_code_label(code: Optional[int]) -> Optional[str]:
     if code in (61, 63, 65): return "Rain"
     if code in (66, 67): return "Freezing rain"
     if code in (71, 73, 75): return "Snow"
-    if code in (77,): return "Snow grains"
+    if code == 77: return "Snow grains"
     if code in (80, 81, 82): return "Rain showers"
     if code in (85, 86): return "Snow showers"
-    if code in (95,): return "Thunderstorm"
+    if code == 95: return "Thunderstorm"
     if code in (96, 99): return "Thunderstorm with hail"
     return f"Code {code}"
 
