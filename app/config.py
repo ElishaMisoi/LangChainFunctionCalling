@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     azure_openai_api_key: Optional[str] = None
     azure_openai_api_version: Optional[str] = None
     azure_openai_deployment: Optional[str] = None
+    open_meteo_geocode_url: Optional[str] = "https://geocoding-api.open-meteo.com/v1/search"
+    open_meteo_forecast_url: Optional[str] = "https://api.open-meteo.com/v1/forecast"
+    newsdata_base: Optional[str] = "https://newsdata.io/api/1"
+    newsdata_api_key: Optional[str] = None
     model_config = SettingsConfigDict(env_file=".env", env_prefix="", extra="ignore")
 
 @lru_cache()

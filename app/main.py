@@ -1,8 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from .chain import chat_chain
 from .config import get_settings
+from typing import Optional
+from .services.weather_service import get_current_weather, WeatherResponse
+from .services.news_service import get_top_headlines, search_news
 
 app = FastAPI(
     title="LangChain Function Calling Bot",
@@ -14,6 +17,8 @@ app = FastAPI(
     openapi_tags=[
         {"name": "health", "description": "Health and readiness endpoints."},
         {"name": "chat", "description": "Chat endpoints for conversational LLM interactions."},
+    {"name": "weather", "description": "Weather lookup endpoints (Open-Meteo)."},
+    {"name": "news", "description": "News lookup endpoints (NewsData)."},
     ],
 )
 
@@ -34,7 +39,6 @@ def healthz():
     """
     return {"status": "ok"}
 
-
 @app.get("/", include_in_schema=False)
 def root_redirect():
     """Redirect the root path to the interactive Swagger UI."""
@@ -45,7 +49,6 @@ def root_redirect():
 def swagger_redirect():
     """Backward-compatible route that redirects to Swagger UI at /docs."""
     return RedirectResponse(url="/docs")
-
 @app.post(
     "/chat",
     response_model=ChatResponse,
@@ -62,6 +65,92 @@ def chat(req: ChatRequest):
         return ChatResponse(output=result)
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
+
+
+@app.get(
+    "/weather/current",
+    response_model=WeatherResponse,
+    tags=["weather"],
+    summary="Get current weather for a location",
+    response_description="Current weather data for the requested location",
+)
+def weather_current(
+    location: str = Query(..., description="Free-form location name, e.g., 'Nairobi' or 'Amboseli National Park'"),
+):
+    """Return the current weather for a location.
+
+    Query parameters:
+    - location: free-form location string (e.g., 'Nairobi' or 'Amboseli National Park')
+
+    Responses
+    - 200: A `WeatherResponse` object with temperature, wind, and condition.
+    - 400: Bad request when the location cannot be resolved or the provider
+      returns an error.
+    """
+    try:
+        return get_current_weather(location)
+    except Exception as ex:
+        raise HTTPException(status_code=400, detail=str(ex)) from ex
+    
+@app.get(
+    "/news/top",
+    tags=["news"],
+    summary="Get top news headlines",
+    response_description="A list of top news headlines based on the provided filters",
+)
+def news_top(
+    country: Optional[str] = Query(None, description="Country code, e.g., 'us'"),
+    category: Optional[str] = Query(None, description="News category, e.g., 'technology'"),
+    language: Optional[str] = Query(None, description="Language code, e.g., 'en'"),
+    limit: int = Query(5, ge=1, le=50, description="Number of articles to return (1-50)"),
+):
+    """Fetch top news headlines.
+
+    Query parameters:
+    - country: Optional country code to filter news (e.g., 'us').
+    - category: Optional category to filter news (e.g., 'technology').
+    - language: Optional language code to filter news (e.g., 'en').
+    - limit: Number of articles to return (default: 5, max: 50).
+
+    Responses:
+    - 200: A list of top news articles.
+    - 500: Internal server error if the news service fails.
+    """
+    try:
+        return {"articles": get_top_headlines(country, category, language, limit)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get(
+    "/news/search",
+    tags=["news"],
+    summary="Search news articles",
+    response_description="A list of news articles matching the search query",
+)
+def news_search(
+    q: str = Query(..., description="Search query string, e.g., 'climate change'"),
+    language: Optional[str] = Query(None, description="Language code, e.g., 'en'"),
+    from_date: Optional[str] = Query(None, description="Start date for the search, e.g., '2025-01-01'"),
+    to_date: Optional[str] = Query(None, description="End date for the search, e.g., '2025-01-31'"),
+    limit: int = Query(5, ge=1, le=50, description="Number of articles to return (1-50)"),
+):
+    """Search for news articles.
+
+    Query parameters:
+    - q: Required search query string (e.g., 'climate change').
+    - language: Optional language code to filter news (e.g., 'en').
+    - from_date: Optional start date for the search (e.g., '2025-01-01').
+    - to_date: Optional end date for the search (e.g., '2025-01-31').
+    - limit: Number of articles to return (default: 5, max: 50).
+
+    Responses:
+    - 200: A list of news articles matching the search query.
+    - 500: Internal server error if the news service fails.
+    """
+    try:
+        return {"articles": search_news(q, language, from_date, to_date, limit)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.on_event("startup")
 def validate_settings():
