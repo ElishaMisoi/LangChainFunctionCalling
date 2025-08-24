@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Create venv and install requirements",
+      "type": "shell",
+      "command": "if (-Not (Test-Path -Path '.venv')) { python -m venv .venv; .\\.venv\\Scripts\\Activate.ps1; pip install -r requirements.txt } else { Write-Host '.venv already exists; skipping creation and install.' }",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Notify: Deactivate venv",
+      "type": "shell",
+      "command": "Write-Host 'If you activated the virtual environment in this terminal, run \".\\.venv\\Scripts\\Deactivate.ps1\"'",
+      "presentation": { "echo": true, "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Remove venv",
+      "type": "shell",
+      "command": "if (Test-Path -Path '.venv') { Remove-Item -Recurse -Force .venv } else { Write-Host '.venv not present' }",
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    }
+  ]
+}
