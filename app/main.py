@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from .chain import chat_chain
+from langchain_core.messages import AIMessage
 from .config import get_settings
 from typing import Optional
 from .services.weather_service import get_current_weather, WeatherResponse
@@ -61,18 +62,19 @@ def chat(req: ChatRequest):
             {"input": req.input},
             config={"configurable": {"session_id": req.session_id}}
         )
-        # If result is a dict with 'output', use that (agent pattern)
         output = None
         if isinstance(result, dict):
             if "output" in result:
                 output = result["output"]
             elif "history" in result:
-                # Find the last AIMessage in history
                 history = result["history"]
                 for msg in reversed(history):
-                    content = getattr(msg, "content", None) or (msg.get("content") if isinstance(msg, dict) else None)
-                    if msg.__class__.__name__ == "AIMessage" or (isinstance(msg, dict) and msg.get("type") == "ai"):
-                        output = content
+                    if isinstance(msg, AIMessage):
+                        output = msg.content
+                        break
+                    # Fallback: dict with type 'ai'
+                    if isinstance(msg, dict) and msg.get("type") == "ai":
+                        output = msg.get("content")
                         break
                 if output is None:
                     output = str(result)
@@ -80,6 +82,9 @@ def chat(req: ChatRequest):
                 output = str(result)
         else:
             output = str(result)
+        # Ensure output is always a string
+        if not isinstance(output, str):
+            output = str(output)
         return ChatResponse(output=output)
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
