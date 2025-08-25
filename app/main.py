@@ -12,7 +12,7 @@ app = FastAPI(
     version="0.1.0",
     description=(
         "A small example FastAPI application demonstrating a conversational"
-        " chain backed by LangChain and Azure OpenAI."
+        " chain backed by LangChain, Function Calling and Azure OpenAI."
     ),
     openapi_tags=[
         {"name": "health", "description": "Health and readiness endpoints."},
@@ -44,7 +44,6 @@ def root_redirect():
     """Redirect the root path to the interactive Swagger UI."""
     return RedirectResponse(url="/docs")
 
-
 @app.get("/swagger", include_in_schema=False)
 def swagger_redirect():
     """Backward-compatible route that redirects to Swagger UI at /docs."""
@@ -62,10 +61,28 @@ def chat(req: ChatRequest):
             {"input": req.input},
             config={"configurable": {"session_id": req.session_id}}
         )
-        return ChatResponse(output=result)
+        # If result is a dict with 'output', use that (agent pattern)
+        output = None
+        if isinstance(result, dict):
+            if "output" in result:
+                output = result["output"]
+            elif "history" in result:
+                # Find the last AIMessage in history
+                history = result["history"]
+                for msg in reversed(history):
+                    content = getattr(msg, "content", None) or (msg.get("content") if isinstance(msg, dict) else None)
+                    if msg.__class__.__name__ == "AIMessage" or (isinstance(msg, dict) and msg.get("type") == "ai"):
+                        output = content
+                        break
+                if output is None:
+                    output = str(result)
+            else:
+                output = str(result)
+        else:
+            output = str(result)
+        return ChatResponse(output=output)
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
-
 
 @app.get(
     "/weather/current",
