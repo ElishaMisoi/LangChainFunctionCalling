@@ -20,6 +20,3 @@ openai
  
 # Testing
 pytest
-
-#Open-Meteo
-requests
